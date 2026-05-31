@@ -59,16 +59,9 @@ body{font-family:'Malgun Gothic',sans-serif;background:#333;}
 </div>
 <button class="clear-btn" onclick="clearAll()">🗑️ 초기화</button>
 
-<div class="fw">
+  <div class="fw">
   <img src="form1.jpg" id="bgImg">
-  <div class="ov" id="ov"
-    onmousedown="startDrag(event)"
-    onmousemove="moveDrag(event)"
-    onmouseup="endDrag(event)"
-    ontouchstart="startDrag(event)"
-    ontouchmove="moveDrag(event)"
-    ontouchend="endDrag(event)">
-  </div>
+  <div class="ov" id="ov" style="z-index:999;"></div>
 </div>
 
 <div class="result" id="result">여기에 좌표가 표시됩니다...</div>
