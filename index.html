@@ -1,0 +1,173 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>이용확인 자료 사진 업로드</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:#888;}
+
+.topbar{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  background:#1a1a2e;display:flex;align-items:center;height:50px;
+}
+.tabs{display:flex;flex:1;height:100%;}
+.tabs button{
+  flex:1;height:100%;border:none;background:transparent;
+  color:#aaa;font-size:14px;cursor:pointer;
+  border-bottom:3px solid transparent;
+}
+.tabs button.on{color:#fff;border-bottom:3px solid #e74c3c;}
+.pbtn{
+  width:70px;height:100%;border:none;
+  background:#27ae60;color:#fff;font-size:13px;
+  cursor:pointer;flex-shrink:0;
+}
+
+.pages{margin-top:50px;}
+.pg{display:none;}
+.pg.on{display:block;}
+
+.fw{
+  position:relative;
+  width:100%;
+  max-width:650px;
+  margin:0 auto;
+}
+.fw img.bg{width:100%;display:block;}
+.ov{position:absolute;top:0;left:0;right:0;bottom:0;}
+
+.pb{
+  position:absolute;
+  overflow:hidden;
+  cursor:pointer;
+  background:rgba(219,240,255,0.35);
+}
+.pb img.pv{
+  width:100%;height:100%;
+  object-fit:cover;
+  position:absolute;top:0;left:0;
+  display:none;
+}
+.pb .ht{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:5px;color:#1a6ea8;font-size:12px;text-align:center;
+  pointer-events:none;
+}
+.pb .ht i{font-size:26px;font-style:normal;}
+.pb input[type=file]{
+  position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2;
+}
+.pb .dl{
+  position:absolute;top:4px;right:4px;
+  background:rgba(192,57,43,.9);color:#fff;
+  border:none;border-radius:50%;
+  width:28px;height:28px;font-size:16px;
+  cursor:pointer;z-index:3;
+  display:none;align-items:center;justify-content:center;
+}
+.pb.hp .dl{display:flex;}
+.pb.hp .ht{display:none;}
+.pb.hp input[type=file]{display:none;}
+.pb.hp img.pv{display:block;}
+
+@media print{
+  @page{size:A4 portrait;margin:0;}
+  .topbar{display:none!important;}
+  .pages{margin-top:0;}
+  .pg{display:block!important;page-break-after:always;}
+  .pg:last-child{page-break-after:avoid;}
+  .fw{max-width:100%!important;width:100%!important;}
+  .pb{background:transparent!important;}
+  .pb .ht,.pb .dl,.pb input{display:none!important;}
+  .pb.hp img.pv{display:block!important;}
+  body{background:#fff;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="tabs">
+    <button class="on" onclick="go(0)">붙임 2-1</button>
+    <button onclick="go(1)">붙임 2-2</button>
+  </div>
+  <button class="pbtn" onclick="window.print()">🖨️ 인쇄</button>
+</div>
+
+<div class="pages">
+  <div class="pg on" id="pg0">
+    <div class="fw">
+      <img class="bg" src="form1.jpg" id="bg0">
+      <div class="ov" id="ov0"></div>
+    </div>
+  </div>
+  <div class="pg" id="pg1">
+    <div class="fw">
+      <img class="bg" src="form2.jpg" id="bg1">
+      <div class="ov" id="ov1"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function go(n){
+  document.querySelectorAll('.pg').forEach((p,i)=>p.classList.toggle('on',i===n));
+  document.querySelectorAll('.tabs button').forEach((b,i)=>b.classList.toggle('on',i===n));
+}
+
+function makePhoto(ov,W,H,tp,lp,wp,hp){
+  const box=document.createElement('div');
+  box.className='pb';
+  box.style.cssText=`top:${tp/100*H}px;left:${lp/100*W}px;width:${wp/100*W}px;height:${hp/100*H}px;`;
+  const pv=document.createElement('img');pv.className='pv';
+  const ht=document.createElement('div');ht.className='ht';
+  ht.innerHTML='<i>📷</i><span>탭하여 사진 선택</span>';
+  const fi=document.createElement('input');fi.type='file';fi.accept='image/*';
+  fi.onchange=e=>{
+    const f=e.target.files[0];if(!f)return;
+    const r=new FileReader();
+    r.onload=ev=>{pv.src=ev.target.result;box.classList.add('hp');};
+    r.readAsDataURL(f);
+  };
+  const dl=document.createElement('button');dl.className='dl';dl.textContent='✕';
+  dl.onclick=e=>{e.stopPropagation();pv.src='';fi.value='';box.classList.remove('hp');};
+  box.appendChild(pv);box.appendChild(ht);box.appendChild(fi);box.appendChild(dl);
+  ov.appendChild(box);
+}
+
+function buildBoxes(idx){
+  const bg=document.getElementById('bg'+idx);
+  const ov=document.getElementById('ov'+idx);
+  ov.innerHTML='';
+  const W=bg.clientWidth,H=bg.clientHeight;
+  if(idx===0){
+    const cols=[{l:2.0,w:46.5},{l:51.5,w:46.5}];
+    const rows=[{t:20.2,h:16.8},{t:42.2,h:16.8},{t:64.3,h:16.8}];
+    rows.forEach(row=>cols.forEach(col=>makePhoto(ov,W,H,row.t,col.l,col.w,row.h)));
+  } else {
+    [{l:2.0,w:46.5},{l:51.5,w:46.5}].forEach(col=>makePhoto(ov,W,H,24.5,col.l,col.w,26.5));
+  }
+}
+
+window.addEventListener('DOMContentLoaded',()=>{
+  [0,1].forEach(idx=>{
+    const bg=document.getElementById('bg'+idx);
+    if(bg.complete&&bg.naturalWidth>0) buildBoxes(idx);
+    else bg.onload=()=>buildBoxes(idx);
+  });
+});
+
+window.addEventListener('resize',()=>{
+  [0,1].forEach(idx=>{
+    const bg=document.getElementById('bg'+idx);
+    if(bg.naturalWidth>0) buildBoxes(idx);
+  });
+});
+</script>
+</body>
+</html>
