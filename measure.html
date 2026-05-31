@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>좌표 측정</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Malgun Gothic',sans-serif;background:#333;}
+.info{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  background:#1a1a2e;color:#fff;
+  padding:10px 14px;font-size:13px;line-height:1.7;
+}
+.info b{color:#f39c12;}
+.result{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:#111;color:#2ecc71;
+  padding:10px 14px;font-size:12px;
+  max-height:160px;overflow-y:auto;
+  font-family:monospace;
+}
+.clear-btn{
+  position:fixed;top:10px;right:10px;z-index:200;
+  background:#e74c3c;color:#fff;border:none;
+  padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;
+}
+.fw{
+  position:relative;
+  width:100%;
+  max-width:650px;
+  margin:70px auto 160px;
+}
+.fw img{width:100%;display:block;}
+.fw .ov{position:absolute;top:0;left:0;right:0;bottom:0;cursor:crosshair;}
+/* 클릭 포인트 */
+.dot{
+  position:absolute;
+  width:10px;height:10px;
+  background:#e74c3c;border-radius:50%;
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+}
+/* 드래그 박스 */
+.dbox{
+  position:absolute;
+  border:2px solid #f39c12;
+  background:rgba(243,156,18,0.2);
+  pointer-events:none;
+}
+</style>
+</head>
+<body>
+
+<div class="info">
+  📐 <b>사진 칸 좌표 측정</b><br>
+  사진이 들어갈 칸의 <b>좌상단 → 우하단</b> 순서로 드래그하세요.<br>
+  아래에 나오는 숫자를 Claude에게 알려주세요.
+</div>
+<button class="clear-btn" onclick="clearAll()">🗑️ 초기화</button>
+
+<div class="fw">
+  <img src="form1.jpg" id="bgImg">
+  <div class="ov" id="ov"
+    onmousedown="startDrag(event)"
+    onmousemove="moveDrag(event)"
+    onmouseup="endDrag(event)"
+    ontouchstart="startDrag(event)"
+    ontouchmove="moveDrag(event)"
+    ontouchend="endDrag(event)">
+  </div>
+</div>
+
+<div class="result" id="result">여기에 좌표가 표시됩니다...</div>
+
+<script>
+let dragging=false;
+let sx,sy,boxes=[];
+const ov=document.getElementById('ov');
+const result=document.getElementById('result');
+
+function getPos(e){
+  const rect=ov.getBoundingClientRect();
+  const src=e.touches?e.touches[0]:e;
+  return{
+    x:src.clientX-rect.left,
+    y:src.clientY-rect.top
+  };
+}
+
+let curBox=null;
+let startX,startY;
+
+function startDrag(e){
+  e.preventDefault();
+  const p=getPos(e);
+  startX=p.x;startY=p.y;
+  dragging=true;
+  curBox=document.createElement('div');
+  curBox.className='dbox';
+  curBox.style.cssText=`left:${startX}px;top:${startY}px;width:0;height:0;`;
+  ov.appendChild(curBox);
+}
+
+function moveDrag(e){
+  if(!dragging||!curBox)return;
+  e.preventDefault();
+  const p=getPos(e);
+  const x=Math.min(startX,p.x);
+  const y=Math.min(startY,p.y);
+  const w=Math.abs(p.x-startX);
+  const h=Math.abs(p.y-startY);
+  curBox.style.cssText=`left:${x}px;top:${y}px;width:${w}px;height:${h}px;`;
+}
+
+function endDrag(e){
+  if(!dragging||!curBox)return;
+  dragging=false;
+  const p=e.changedTouches?{x:e.changedTouches[0].clientX-ov.getBoundingClientRect().left,y:e.changedTouches[0].clientY-ov.getBoundingClientRect().top}:getPos(e);
+  
+  const W=ov.clientWidth;
+  const H=ov.clientHeight;
+  const x=Math.min(startX,p.x);
+  const y=Math.min(startY,p.y);
+  const w=Math.abs(p.x-startX);
+  const h=Math.abs(p.y-startY);
+
+  if(w<10||h<10){curBox.remove();curBox=null;return;}
+
+  const tp=(y/H*100).toFixed(1);
+  const lp=(x/W*100).toFixed(1);
+  const wp=(w/W*100).toFixed(1);
+  const hp=(h/H*100).toFixed(1);
+
+  boxes.push({tp,lp,wp,hp});
+  const n=boxes.length;
+
+  // 번호 표시
+  const label=document.createElement('div');
+  label.style.cssText=`position:absolute;top:${y}px;left:${x}px;background:#f39c12;color:#000;font-size:11px;font-weight:bold;padding:1px 4px;pointer-events:none;`;
+  label.textContent=n;
+  ov.appendChild(label);
+
+  updateResult();
+  curBox=null;
+}
+
+function updateResult(){
+  let txt='📋 측정된 좌표 (Claude에게 복사해서 전달):\n\n';
+  boxes.forEach((b,i)=>{
+    txt+=`박스${i+1}: top=${b.tp}%, left=${b.lp}%, width=${b.wp}%, height=${b.hp}%\n`;
+  });
+  result.textContent=txt;
+}
+
+function clearAll(){
+  boxes=[];
+  ov.innerHTML='';
+  result.textContent='여기에 좌표가 표시됩니다...';
+}
+
+// form2로 전환
+document.title='좌표 측정 - 붙임2-1';
+</script>
+</body>
+</html>
