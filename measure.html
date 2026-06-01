@@ -6,44 +6,40 @@
 <title>좌표 측정</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Malgun Gothic',sans-serif;background:#333;}
-.info{
+body{font-family:'Malgun Gothic',sans-serif;background:#888;}
+
+/* index.html과 완전히 동일한 topbar */
+.topbar{
   position:fixed;top:0;left:0;right:0;z-index:100;
-  background:#1a1a2e;color:#fff;
-  padding:10px 14px;font-size:13px;line-height:1.7;
+  background:#1a1a2e;display:flex;align-items:center;height:50px;
 }
-.info b{color:#f39c12;}
-.clear-btn{
-  position:fixed;top:10px;right:10px;z-index:200;
-  background:#e74c3c;color:#fff;border:none;
-  padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;
+.topbar span{color:#fff;padding:0 16px;font-size:14px;}
+.btns{margin-left:auto;display:flex;gap:6px;padding-right:10px;}
+.btns button{
+  border:none;border-radius:6px;
+  padding:7px 12px;font-size:12px;cursor:pointer;color:#fff;
 }
-.toggle-btn{
-  position:fixed;top:10px;right:90px;z-index:200;
-  background:#8e44ad;color:#fff;border:none;
-  padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;
-}
-.result{
-  position:fixed;bottom:0;left:0;right:0;z-index:100;
-  background:#111;color:#2ecc71;
-  padding:10px 14px;font-size:12px;
-  max-height:160px;overflow-y:auto;
-  font-family:monospace;white-space:pre;
-}
+.btn-toggle{background:#8e44ad;}
+.btn-clear{background:#e74c3c;}
+
+/* index.html과 완전히 동일한 fw */
+.pages{margin-top:50px;}
 .fw{
   position:relative;
   width:100%;
   max-width:650px;
-  margin:70px auto 170px;
+  margin:0 auto;
   cursor:crosshair;
 }
-.fw img{width:100%;display:block;pointer-events:none;}
+.fw img.bg{width:100%;display:block;pointer-events:none;}
+.ov{position:absolute;top:0;left:0;right:0;bottom:0;z-index:10;}
+
 .dbox{
   position:absolute;
   border:2px solid #f39c12;
   background:rgba(243,156,18,0.25);
   pointer-events:none;
-  z-index:10;
+  z-index:20;
 }
 .dlabel{
   position:absolute;
@@ -51,24 +47,37 @@ body{font-family:'Malgun Gothic',sans-serif;background:#333;}
   font-size:12px;font-weight:bold;
   padding:1px 5px;
   pointer-events:none;
-  z-index:11;
+  z-index:21;
+}
+
+/* 결과 */
+.result{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:#111;color:#2ecc71;
+  padding:10px 14px;font-size:12px;
+  max-height:130px;overflow-y:auto;
+  font-family:monospace;white-space:pre;
 }
 </style>
 </head>
 <body>
 
-<div class="info">
-  📐 <b>사진 칸 좌표 측정</b> — 사진이 들어갈 빈 칸을 마우스로 드래그하세요.<br>
-  측정 후 아래 좌표를 복사해서 Claude에게 전달하세요.
+<div class="topbar">
+  <span>📐 사진 칸을 마우스로 드래그하세요</span>
+  <div class="btns">
+    <button class="btn-toggle" onclick="toggleImg()">form1 ↔ form2</button>
+    <button class="btn-clear" onclick="clearAll()">🗑️ 초기화</button>
+  </div>
 </div>
-<button class="toggle-btn" onclick="toggleImg()">form1 ↔ form2</button>
-<button class="clear-btn" onclick="clearAll()">🗑️ 초기화</button>
 
-<div class="fw" id="fw"
-  onmousedown="startDrag(event)"
-  onmousemove="moveDrag(event)"
-  onmouseup="endDrag(event)">
-  <img src="form1.jpg" id="bgImg">
+<div class="pages">
+  <div class="fw" id="fw"
+    onmousedown="startDrag(event)"
+    onmousemove="moveDrag(event)"
+    onmouseup="endDrag(event)">
+    <img class="bg" src="form1.jpg" id="bgImg">
+    <div class="ov" id="ov"></div>
+  </div>
 </div>
 
 <div class="result" id="result">여기에 좌표가 표시됩니다...</div>
@@ -81,6 +90,7 @@ let boxes=[];
 let currentForm=1;
 
 const fw=document.getElementById('fw');
+const ov=document.getElementById('ov');
 const result=document.getElementById('result');
 
 function getPos(e){
@@ -89,6 +99,7 @@ function getPos(e){
 }
 
 function startDrag(e){
+  if(e.target.classList.contains('dbox')||e.target.classList.contains('dlabel'))return;
   e.preventDefault();
   const p=getPos(e);
   startX=p.x;startY=p.y;
@@ -96,17 +107,21 @@ function startDrag(e){
   curBox=document.createElement('div');
   curBox.className='dbox';
   curBox.style.cssText=`left:${startX}px;top:${startY}px;width:0;height:0;`;
-  fw.appendChild(curBox);
+  ov.appendChild(curBox);
 }
 
 function moveDrag(e){
   if(!dragging||!curBox)return;
+  e.preventDefault();
   const p=getPos(e);
   const x=Math.min(startX,p.x);
   const y=Math.min(startY,p.y);
   const w=Math.abs(p.x-startX);
   const h=Math.abs(p.y-startY);
-  curBox.style.cssText=`left:${x}px;top:${y}px;width:${w}px;height:${h}px;border:2px solid #f39c12;background:rgba(243,156,18,0.25);position:absolute;pointer-events:none;z-index:10;`;
+  curBox.style.left=x+'px';
+  curBox.style.top=y+'px';
+  curBox.style.width=w+'px';
+  curBox.style.height=h+'px';
 }
 
 function endDrag(e){
@@ -131,16 +146,17 @@ function endDrag(e){
 
   const label=document.createElement('div');
   label.className='dlabel';
-  label.style.cssText=`left:${x}px;top:${y}px;`;
+  label.style.left=x+'px';
+  label.style.top=y+'px';
   label.textContent=boxes.length;
-  fw.appendChild(label);
+  ov.appendChild(label);
 
   curBox=null;
   updateResult();
 }
 
 function updateResult(){
-  let txt='📋 측정 결과 (Claude에게 전달):\n\n';
+  let txt='📋 측정 결과:\n\n';
   boxes.forEach((b,i)=>{
     txt+=`박스${i+1}(form${b.form}): t=${b.tp}%, l=${b.lp}%, w=${b.wp}%, h=${b.hp}%\n`;
   });
@@ -149,8 +165,7 @@ function updateResult(){
 
 function clearAll(){
   boxes=[];
-  // 박스와 라벨만 제거
-  fw.querySelectorAll('.dbox,.dlabel').forEach(el=>el.remove());
+  ov.innerHTML='';
   result.textContent='여기에 좌표가 표시됩니다...';
 }
 
@@ -159,10 +174,11 @@ function toggleImg(){
   if(currentForm===1){
     img.src='form2.jpg';
     currentForm=2;
-  } else {
+  }else{
     img.src='form1.jpg';
     currentForm=1;
   }
+  clearAll();
 }
 </script>
 </body>
