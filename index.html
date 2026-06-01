@@ -7,65 +7,23 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:#888;}
-.topbar{
-  position:fixed;top:0;left:0;right:0;z-index:100;
-  background:#1a1a2e;display:flex;align-items:center;height:50px;
-}
+.topbar{position:fixed;top:0;left:0;right:0;z-index:100;background:#1a1a2e;display:flex;align-items:center;height:50px;}
 .tabs{display:flex;flex:1;height:100%;}
-.tabs button{
-  flex:1;height:100%;border:none;background:transparent;
-  color:#aaa;font-size:14px;cursor:pointer;
-  border-bottom:3px solid transparent;
-}
+.tabs button{flex:1;height:100%;border:none;background:transparent;color:#aaa;font-size:14px;cursor:pointer;border-bottom:3px solid transparent;}
 .tabs button.on{color:#fff;border-bottom:3px solid #e74c3c;}
-.pbtn{
-  width:70px;height:100%;border:none;
-  background:#27ae60;color:#fff;font-size:13px;
-  cursor:pointer;flex-shrink:0;
-}
+.pbtn{width:70px;height:100%;border:none;background:#27ae60;color:#fff;font-size:13px;cursor:pointer;flex-shrink:0;}
 .pages{margin-top:50px;}
 .pg{display:none;}
 .pg.on{display:block;}
-.fw{
-  position:relative;
-  width:100%;
-  max-width:650px;
-  margin:0 auto;
-}
+.fw{position:relative;width:100%;max-width:650px;margin:0 auto;}
 .fw img.bg{width:100%;display:block;}
 .ov{position:absolute;top:0;left:0;right:0;bottom:0;}
-.pb{
-  position:absolute;
-  overflow:hidden;
-  cursor:pointer;
-  background:rgba(255,0,0,0.3);
-  border:2px solid red;
-}
-.pb img.pv{
-  width:100%;height:100%;
-  object-fit:cover;
-  position:absolute;top:0;left:0;
-  display:none;
-}
-.pb .ht{
-  position:absolute;inset:0;
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  gap:5px;color:#1a6ea8;font-size:12px;text-align:center;
-  pointer-events:none;
-}
+.pb{position:absolute;overflow:hidden;cursor:pointer;background:rgba(219,240,255,0.35);}
+.pb img.pv{width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;display:none;}
+.pb .ht{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:#1a6ea8;font-size:12px;text-align:center;pointer-events:none;}
 .pb .ht i{font-size:26px;font-style:normal;}
-.pb input[type=file]{
-  position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2;
-}
-.pb .dl{
-  position:absolute;top:4px;right:4px;
-  background:rgba(192,57,43,.9);color:#fff;
-  border:none;border-radius:50%;
-  width:28px;height:28px;font-size:16px;
-  cursor:pointer;z-index:3;
-  display:none;align-items:center;justify-content:center;
-}
+.pb input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2;}
+.pb .dl{position:absolute;top:4px;right:4px;background:rgba(192,57,43,.9);color:#fff;border:none;border-radius:50%;width:28px;height:28px;font-size:16px;cursor:pointer;z-index:3;display:none;align-items:center;justify-content:center;}
 .pb.hp .dl{display:flex;}
 .pb.hp .ht{display:none;}
 .pb.hp input[type=file]{display:none;}
@@ -95,13 +53,13 @@ body{font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:#88
 <div class="pages">
   <div class="pg on" id="pg0">
     <div class="fw">
-      <img class="bg" src="form1.jpg" id="bg0">
+      <img class="bg" id="bg0">
       <div class="ov" id="ov0"></div>
     </div>
   </div>
   <div class="pg" id="pg1">
     <div class="fw">
-      <img class="bg" src="form2.jpg" id="bg1">
+      <img class="bg" id="bg1">
       <div class="ov" id="ov1"></div>
     </div>
   </div>
@@ -111,6 +69,7 @@ function go(n){
   document.querySelectorAll('.pg').forEach((p,i)=>p.classList.toggle('on',i===n));
   document.querySelectorAll('.tabs button').forEach((b,i)=>b.classList.toggle('on',i===n));
 }
+
 function makePhoto(ov,W,H,tp,lp,wp,hp){
   const box=document.createElement('div');
   box.className='pb';
@@ -130,6 +89,7 @@ function makePhoto(ov,W,H,tp,lp,wp,hp){
   box.appendChild(pv);box.appendChild(ht);box.appendChild(fi);box.appendChild(dl);
   ov.appendChild(box);
 }
+
 function buildBoxes(idx){
   const bg=document.getElementById('bg'+idx);
   const ov=document.getElementById('ov'+idx);
@@ -151,13 +111,17 @@ function buildBoxes(idx){
     ].forEach(b=>makePhoto(ov,W,H,b.t,b.l,b.w,b.h));
   }
 }
-window.addEventListener('DOMContentLoaded',()=>{
-  [0,1].forEach(idx=>{
-    const bg=document.getElementById('bg'+idx);
-    if(bg.complete&&bg.naturalWidth>0) buildBoxes(idx);
-    else bg.onload=()=>buildBoxes(idx);
-  });
-});
+
+// 이미지를 JS로 로드해서 타이밍 문제 완전 해결
+function loadImage(idx, src){
+  const bg=document.getElementById('bg'+idx);
+  bg.onload=()=>buildBoxes(idx);
+  bg.src=src;
+}
+
+loadImage(0,'form1.jpg');
+loadImage(1,'form2.jpg');
+
 window.addEventListener('resize',()=>{
   [0,1].forEach(idx=>{
     const bg=document.getElementById('bg'+idx);
