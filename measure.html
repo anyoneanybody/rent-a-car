@@ -13,76 +13,80 @@ body{font-family:'Malgun Gothic',sans-serif;background:#333;}
   padding:10px 14px;font-size:13px;line-height:1.7;
 }
 .info b{color:#f39c12;}
-.result{
-  position:fixed;bottom:0;left:0;right:0;z-index:100;
-  background:#111;color:#2ecc71;
-  padding:10px 14px;font-size:12px;
-  max-height:160px;overflow-y:auto;
-  font-family:monospace;
-}
 .clear-btn{
   position:fixed;top:10px;right:10px;z-index:200;
   background:#e74c3c;color:#fff;border:none;
   padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;
 }
+.toggle-btn{
+  position:fixed;top:10px;right:90px;z-index:200;
+  background:#8e44ad;color:#fff;border:none;
+  padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;
+}
+.result{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:#111;color:#2ecc71;
+  padding:10px 14px;font-size:12px;
+  max-height:160px;overflow-y:auto;
+  font-family:monospace;white-space:pre;
+}
 .fw{
   position:relative;
   width:100%;
   max-width:650px;
-  margin:70px auto 160px;
+  margin:70px auto 170px;
+  cursor:crosshair;
 }
-.fw img{width:100%;display:block;}
-.fw .ov{position:absolute;top:0;left:0;right:0;bottom:0;cursor:crosshair;}
-/* 클릭 포인트 */
-.dot{
-  position:absolute;
-  width:10px;height:10px;
-  background:#e74c3c;border-radius:50%;
-  transform:translate(-50%,-50%);
-  pointer-events:none;
-}
-/* 드래그 박스 */
+.fw img{width:100%;display:block;pointer-events:none;}
 .dbox{
   position:absolute;
   border:2px solid #f39c12;
-  background:rgba(243,156,18,0.2);
+  background:rgba(243,156,18,0.25);
   pointer-events:none;
+  z-index:10;
+}
+.dlabel{
+  position:absolute;
+  background:#f39c12;color:#000;
+  font-size:12px;font-weight:bold;
+  padding:1px 5px;
+  pointer-events:none;
+  z-index:11;
 }
 </style>
 </head>
 <body>
 
 <div class="info">
-  📐 <b>사진 칸 좌표 측정</b><br>
-  사진이 들어갈 칸의 <b>좌상단 → 우하단</b> 순서로 드래그하세요.<br>
-  아래에 나오는 숫자를 Claude에게 알려주세요.
+  📐 <b>사진 칸 좌표 측정</b> — 사진이 들어갈 빈 칸을 마우스로 드래그하세요.<br>
+  측정 후 아래 좌표를 복사해서 Claude에게 전달하세요.
 </div>
+<button class="toggle-btn" onclick="toggleImg()">form1 ↔ form2</button>
 <button class="clear-btn" onclick="clearAll()">🗑️ 초기화</button>
 
-  <div class="fw">
+<div class="fw" id="fw"
+  onmousedown="startDrag(event)"
+  onmousemove="moveDrag(event)"
+  onmouseup="endDrag(event)">
   <img src="form1.jpg" id="bgImg">
-  <div class="ov" id="ov" style="z-index:999;"></div>
 </div>
 
 <div class="result" id="result">여기에 좌표가 표시됩니다...</div>
 
 <script>
 let dragging=false;
-let sx,sy,boxes=[];
-const ov=document.getElementById('ov');
+let startX,startY;
+let curBox=null;
+let boxes=[];
+let currentForm=1;
+
+const fw=document.getElementById('fw');
 const result=document.getElementById('result');
 
 function getPos(e){
-  const rect=ov.getBoundingClientRect();
-  const src=e.touches?e.touches[0]:e;
-  return{
-    x:src.clientX-rect.left,
-    y:src.clientY-rect.top
-  };
+  const rect=fw.getBoundingClientRect();
+  return{x:e.clientX-rect.left, y:e.clientY-rect.top};
 }
-
-let curBox=null;
-let startX,startY;
 
 function startDrag(e){
   e.preventDefault();
@@ -92,27 +96,25 @@ function startDrag(e){
   curBox=document.createElement('div');
   curBox.className='dbox';
   curBox.style.cssText=`left:${startX}px;top:${startY}px;width:0;height:0;`;
-  ov.appendChild(curBox);
+  fw.appendChild(curBox);
 }
 
 function moveDrag(e){
   if(!dragging||!curBox)return;
-  e.preventDefault();
   const p=getPos(e);
   const x=Math.min(startX,p.x);
   const y=Math.min(startY,p.y);
   const w=Math.abs(p.x-startX);
   const h=Math.abs(p.y-startY);
-  curBox.style.cssText=`left:${x}px;top:${y}px;width:${w}px;height:${h}px;`;
+  curBox.style.cssText=`left:${x}px;top:${y}px;width:${w}px;height:${h}px;border:2px solid #f39c12;background:rgba(243,156,18,0.25);position:absolute;pointer-events:none;z-index:10;`;
 }
 
 function endDrag(e){
   if(!dragging||!curBox)return;
   dragging=false;
-  const p=e.changedTouches?{x:e.changedTouches[0].clientX-ov.getBoundingClientRect().left,y:e.changedTouches[0].clientY-ov.getBoundingClientRect().top}:getPos(e);
-  
-  const W=ov.clientWidth;
-  const H=ov.clientHeight;
+  const p=getPos(e);
+  const W=fw.clientWidth;
+  const H=fw.clientHeight;
   const x=Math.min(startX,p.x);
   const y=Math.min(startY,p.y);
   const w=Math.abs(p.x-startX);
@@ -125,35 +127,43 @@ function endDrag(e){
   const wp=(w/W*100).toFixed(1);
   const hp=(h/H*100).toFixed(1);
 
-  boxes.push({tp,lp,wp,hp});
-  const n=boxes.length;
+  boxes.push({tp,lp,wp,hp,form:currentForm});
 
-  // 번호 표시
   const label=document.createElement('div');
-  label.style.cssText=`position:absolute;top:${y}px;left:${x}px;background:#f39c12;color:#000;font-size:11px;font-weight:bold;padding:1px 4px;pointer-events:none;`;
-  label.textContent=n;
-  ov.appendChild(label);
+  label.className='dlabel';
+  label.style.cssText=`left:${x}px;top:${y}px;`;
+  label.textContent=boxes.length;
+  fw.appendChild(label);
 
-  updateResult();
   curBox=null;
+  updateResult();
 }
 
 function updateResult(){
-  let txt='📋 측정된 좌표 (Claude에게 복사해서 전달):\n\n';
+  let txt='📋 측정 결과 (Claude에게 전달):\n\n';
   boxes.forEach((b,i)=>{
-    txt+=`박스${i+1}: top=${b.tp}%, left=${b.lp}%, width=${b.wp}%, height=${b.hp}%\n`;
+    txt+=`박스${i+1}(form${b.form}): t=${b.tp}%, l=${b.lp}%, w=${b.wp}%, h=${b.hp}%\n`;
   });
   result.textContent=txt;
 }
 
 function clearAll(){
   boxes=[];
-  ov.innerHTML='';
+  // 박스와 라벨만 제거
+  fw.querySelectorAll('.dbox,.dlabel').forEach(el=>el.remove());
   result.textContent='여기에 좌표가 표시됩니다...';
 }
 
-// form2로 전환
-document.title='좌표 측정 - 붙임2-1';
+function toggleImg(){
+  const img=document.getElementById('bgImg');
+  if(currentForm===1){
+    img.src='form2.jpg';
+    currentForm=2;
+  } else {
+    img.src='form1.jpg';
+    currentForm=1;
+  }
+}
 </script>
 </body>
 </html>
