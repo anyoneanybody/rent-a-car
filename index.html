@@ -2,182 +2,184 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>이용확인 자료 사진 업로드</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>좌표 측정</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:#888;}
+body{font-family:'Malgun Gothic',sans-serif;background:#888;}
 
+/* index.html과 완전히 동일한 topbar */
 .topbar{
   position:fixed;top:0;left:0;right:0;z-index:100;
   background:#1a1a2e;display:flex;align-items:center;height:50px;
 }
-.tabs{display:flex;flex:1;height:100%;}
-.tabs button{
-  flex:1;height:100%;border:none;background:transparent;
-  color:#aaa;font-size:14px;cursor:pointer;
-  border-bottom:3px solid transparent;
+.topbar span{color:#fff;padding:0 16px;font-size:14px;}
+.btns{margin-left:auto;display:flex;gap:6px;padding-right:10px;}
+.btns button{
+  border:none;border-radius:6px;
+  padding:7px 12px;font-size:12px;cursor:pointer;color:#fff;
 }
-.tabs button.on{color:#fff;border-bottom:3px solid #e74c3c;}
-.pbtn{
-  width:70px;height:100%;border:none;
-  background:#27ae60;color:#fff;font-size:13px;
-  cursor:pointer;flex-shrink:0;
-}
+.btn-toggle{background:#8e44ad;}
+.btn-clear{background:#e74c3c;}
 
+/* index.html과 완전히 동일한 fw */
 .pages{margin-top:50px;}
-.pg{display:none;}
-.pg.on{display:block;}
-
 .fw{
   position:relative;
   width:100%;
   max-width:650px;
   margin:0 auto;
+  cursor:crosshair;
 }
-.fw img.bg{width:100%;display:block;}
-.ov{position:absolute;top:0;left:0;right:0;bottom:0;}
+.fw img.bg{width:100%;display:block;pointer-events:none;}
+.ov{position:absolute;top:0;left:0;right:0;bottom:0;z-index:10;}
 
-.pb{
+.dbox{
   position:absolute;
-  overflow:hidden;
-  cursor:pointer;
-  background:rgba(219,240,255,0.35);
-}
-.pb img.pv{
-  width:100%;height:100%;
-  object-fit:cover;
-  position:absolute;top:0;left:0;
-  display:none;
-}
-.pb .ht{
-  position:absolute;inset:0;
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  gap:5px;color:#1a6ea8;font-size:12px;text-align:center;
+  border:2px solid #f39c12;
+  background:rgba(243,156,18,0.25);
   pointer-events:none;
+  z-index:20;
 }
-.pb .ht i{font-size:26px;font-style:normal;}
-.pb input[type=file]{
-  position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2;
+.dlabel{
+  position:absolute;
+  background:#f39c12;color:#000;
+  font-size:12px;font-weight:bold;
+  padding:1px 5px;
+  pointer-events:none;
+  z-index:21;
 }
-.pb .dl{
-  position:absolute;top:4px;right:4px;
-  background:rgba(192,57,43,.9);color:#fff;
-  border:none;border-radius:50%;
-  width:28px;height:28px;font-size:16px;
-  cursor:pointer;z-index:3;
-  display:none;align-items:center;justify-content:center;
-}
-.pb.hp .dl{display:flex;}
-.pb.hp .ht{display:none;}
-.pb.hp input[type=file]{display:none;}
-.pb.hp img.pv{display:block;}
 
-@media print{
-  @page{size:A4 portrait;margin:0;}
-  .topbar{display:none!important;}
-  .pages{margin-top:0;}
-  .pg{display:block!important;page-break-after:always;}
-  .pg:last-child{page-break-after:avoid;}
-  .fw{max-width:100%!important;width:100%!important;}
-  .pb{background:transparent!important;}
-  .pb .ht,.pb .dl,.pb input{display:none!important;}
-  .pb.hp img.pv{display:block!important;}
-  body{background:#fff;}
+/* 결과 */
+.result{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:#111;color:#2ecc71;
+  padding:10px 14px;font-size:12px;
+  max-height:130px;overflow-y:auto;
+  font-family:monospace;white-space:pre;
 }
 </style>
 </head>
 <body>
 
 <div class="topbar">
-  <div class="tabs">
-    <button class="on" onclick="go(0)">붙임 2-1</button>
-    <button onclick="go(1)">붙임 2-2</button>
+  <span>📐 사진 칸을 마우스로 드래그하세요</span>
+  <div class="btns">
+    <button class="btn-toggle" onclick="toggleImg()">form1 ↔ form2</button>
+    <button class="btn-clear" onclick="clearAll()">🗑️ 초기화</button>
   </div>
-  <button class="pbtn" onclick="window.print()">🖨️ 인쇄</button>
 </div>
 
 <div class="pages">
-  <div class="pg on" id="pg0">
-    <div class="fw">
-      <img class="bg" src="form1.jpg" id="bg0">
-      <div class="ov" id="ov0"></div>
-    </div>
-  </div>
-  <div class="pg" id="pg1">
-    <div class="fw">
-      <img class="bg" src="form2.jpg" id="bg1">
-      <div class="ov" id="ov1"></div>
-    </div>
+  <div class="fw" id="fw"
+    onmousedown="startDrag(event)"
+    onmousemove="moveDrag(event)"
+    onmouseup="endDrag(event)">
+    <img class="bg" src="form1.jpg" id="bgImg">
+    <div class="ov" id="ov"></div>
   </div>
 </div>
 
+<div class="result" id="result">여기에 좌표가 표시됩니다...</div>
+
 <script>
-function go(n){
-  document.querySelectorAll('.pg').forEach((p,i)=>p.classList.toggle('on',i===n));
-  document.querySelectorAll('.tabs button').forEach((b,i)=>b.classList.toggle('on',i===n));
+let dragging=false;
+let startX,startY;
+let curBox=null;
+let boxes=[];
+let currentForm=1;
+
+const fw=document.getElementById('fw');
+const ov=document.getElementById('ov');
+const result=document.getElementById('result');
+
+function getPos(e){
+  const rect=fw.getBoundingClientRect();
+  return{x:e.clientX-rect.left, y:e.clientY-rect.top};
 }
 
-function makePhoto(ov,W,H,tp,lp,wp,hp){
-  const box=document.createElement('div');
-  box.className='pb';
-  box.style.cssText=`top:${tp/100*H}px;left:${lp/100*W}px;width:${wp/100*W}px;height:${hp/100*H}px;`;
-  const pv=document.createElement('img');pv.className='pv';
-  const ht=document.createElement('div');ht.className='ht';
-  ht.innerHTML='<i>📷</i><span>탭하여 사진 선택</span>';
-  const fi=document.createElement('input');fi.type='file';fi.accept='image/*';
-  fi.onchange=e=>{
-    const f=e.target.files[0];if(!f)return;
-    const r=new FileReader();
-    r.onload=ev=>{pv.src=ev.target.result;box.classList.add('hp');};
-    r.readAsDataURL(f);
-  };
-  const dl=document.createElement('button');dl.className='dl';dl.textContent='✕';
-  dl.onclick=e=>{e.stopPropagation();pv.src='';fi.value='';box.classList.remove('hp');};
-  box.appendChild(pv);box.appendChild(ht);box.appendChild(fi);box.appendChild(dl);
-  ov.appendChild(box);
+function startDrag(e){
+  if(e.target.classList.contains('dbox')||e.target.classList.contains('dlabel'))return;
+  e.preventDefault();
+  const p=getPos(e);
+  startX=p.x;startY=p.y;
+  dragging=true;
+  curBox=document.createElement('div');
+  curBox.className='dbox';
+  curBox.style.cssText=`left:${startX}px;top:${startY}px;width:0;height:0;`;
+  ov.appendChild(curBox);
 }
 
-function buildBoxes(idx){
-  const bg=document.getElementById('bg'+idx);
-  const ov=document.getElementById('ov'+idx);
+function moveDrag(e){
+  if(!dragging||!curBox)return;
+  e.preventDefault();
+  const p=getPos(e);
+  const x=Math.min(startX,p.x);
+  const y=Math.min(startY,p.y);
+  const w=Math.abs(p.x-startX);
+  const h=Math.abs(p.y-startY);
+  curBox.style.left=x+'px';
+  curBox.style.top=y+'px';
+  curBox.style.width=w+'px';
+  curBox.style.height=h+'px';
+}
+
+function endDrag(e){
+  if(!dragging||!curBox)return;
+  dragging=false;
+  const p=getPos(e);
+  const W=fw.clientWidth;
+  const H=fw.clientHeight;
+  const x=Math.min(startX,p.x);
+  const y=Math.min(startY,p.y);
+  const w=Math.abs(p.x-startX);
+  const h=Math.abs(p.y-startY);
+
+  if(w<10||h<10){curBox.remove();curBox=null;return;}
+
+  const tp=(y/H*100).toFixed(1);
+  const lp=(x/W*100).toFixed(1);
+  const wp=(w/W*100).toFixed(1);
+  const hp=(h/H*100).toFixed(1);
+
+  boxes.push({tp,lp,wp,hp,form:currentForm});
+
+  const label=document.createElement('div');
+  label.className='dlabel';
+  label.style.left=x+'px';
+  label.style.top=y+'px';
+  label.textContent=boxes.length;
+  ov.appendChild(label);
+
+  curBox=null;
+  updateResult();
+}
+
+function updateResult(){
+  let txt='📋 측정 결과:\n\n';
+  boxes.forEach((b,i)=>{
+    txt+=`박스${i+1}(form${b.form}): t=${b.tp}%, l=${b.lp}%, w=${b.wp}%, h=${b.hp}%\n`;
+  });
+  result.textContent=txt;
+}
+
+function clearAll(){
+  boxes=[];
   ov.innerHTML='';
-  const W=bg.clientWidth,H=bg.clientHeight;
-
-  if(idx===0){
-    // 붙임2-1: 라벨 아래 빈칸만 커버 (top을 라벨 높이만큼 내림)
-    [
-      {t:26.5, l:9.5,  w:38.8, h:15.2},
-      {t:26.5, l:51.2, w:38.8, h:15.2},
-      {t:49.7, l:9.3,  w:39.1, h:15.3},
-      {t:49.7, l:51.2, w:38.9, h:15.3},
-      {t:72.9, l:9.5,  w:38.8, h:15.0},
-      {t:72.8, l:51.2, w:38.8, h:15.3},
-    ].forEach(b=>makePhoto(ov,W,H,b.t,b.l,b.w,b.h));
-  } else {
-    // 붙임2-2: 라벨 아래 빈칸만 커버
-    [
-      {t:26.5, l:9.3,  w:38.9, h:15.0},
-      {t:26.5, l:51.0, w:39.1, h:15.0},
-    ].forEach(b=>makePhoto(ov,W,H,b.t,b.l,b.w,b.h));
-  }
+  result.textContent='여기에 좌표가 표시됩니다...';
 }
 
-window.addEventListener('DOMContentLoaded',()=>{
-  [0,1].forEach(idx=>{
-    const bg=document.getElementById('bg'+idx);
-    if(bg.complete&&bg.naturalWidth>0) buildBoxes(idx);
-    else bg.onload=()=>buildBoxes(idx);
-  });
-});
-
-window.addEventListener('resize',()=>{
-  [0,1].forEach(idx=>{
-    const bg=document.getElementById('bg'+idx);
-    if(bg.naturalWidth>0) buildBoxes(idx);
-  });
-});
+function toggleImg(){
+  const img=document.getElementById('bgImg');
+  if(currentForm===1){
+    img.src='form2.jpg';
+    currentForm=2;
+  }else{
+    img.src='form1.jpg';
+    currentForm=1;
+  }
+  clearAll();
+}
 </script>
 </body>
 </html>
